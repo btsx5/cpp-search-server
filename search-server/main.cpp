@@ -41,7 +41,6 @@ vector<string> SplitIntoWords(const string& text) {
     if (!word.empty()) {
         words.push_back(word);
     }
-
     return words;
 }
 
@@ -59,13 +58,11 @@ public:
     }
 
     void AddDocument(int document_id, const string& document) {
-
-        int doc_size = SplitIntoWordsNoStop(document).size(); // размер добавляемого документа
-        for (string& word : SplitIntoWordsNoStop(document)) {
-            double TF = 0;
-            word_to_document_freqs_[word][document_id] = ++TF / doc_size; /* по ключу(word) , и под-ключу (document_id)
+        vector<string> words = SplitIntoWordsNoStop(document);
+        double TF = 1.0 / words.size(); // формула TF
+        for (string& word : words) {
+             word_to_document_freqs_[word][document_id] += TF; /* по ключу(word) , и под-ключу (document_id)
              составляем словарь с Word > ID , TF. высчитываем TF , если слово встречается второй раз, ++TF  */
-
         }
         ++document_count_;
     }
@@ -73,7 +70,6 @@ public:
     vector<Document> FindTopDocuments(const string& raw_query) const {
         const Query query = ParseQuery(raw_query);
         auto matched_documents = FindAllDocuments(query);
-
         sort(matched_documents.begin(), matched_documents.end(),
             [](const Document& lhs, const Document& rhs) {
                 return lhs.relevance > rhs.relevance;
@@ -85,20 +81,15 @@ public:
     }
 
 private:
-
-
     struct Query {
         set<string> pluswords_;
         set<string> minuswords_;
     };
 
-
-
     double document_count_ = 0;
     // map<string, set<int>> word_to_documents_;
     map<string, map<int, double>> word_to_document_freqs_; // Словарь - Слово , ID / TF
     set<string> stop_words_;
-
 
     bool IsStopWord(const string& word) const {
         return stop_words_.count(word) > 0;
@@ -116,7 +107,6 @@ private:
 
     Query ParseQuery(const string& text) const {
         Query query_words;
-
         for (string word : SplitIntoWordsNoStop(text)) {
             if (word[0] == '-') {
 
@@ -158,13 +148,11 @@ private:
             }
         }
 
-
         for (const auto [document_id, relevance] : document_to_relevance) {    // возвращаем конечный вектор /id/rel/
             matched_documents.push_back({ document_id, relevance });
         }
         return matched_documents;
     }
-
 };
 
 SearchServer CreateSearchServer() {
@@ -175,7 +163,6 @@ SearchServer CreateSearchServer() {
     for (int document_id = 0; document_id < document_count; ++document_id) {
         search_server.AddDocument(document_id, ReadLine());
     }
-
     return search_server;
 }
 
