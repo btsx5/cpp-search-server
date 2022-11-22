@@ -34,6 +34,13 @@ vector<string> SplitIntoWords(const string& text) {
     return words;
 }
 
+static bool IsValidWord(const string& word) {
+    // A valid word must not contain special characters
+    return none_of(word.begin(), word.end(), [](char c) {
+        return c >= '\0' && c < ' ';
+    });
+}
+
 struct Document {
     Document() = default;
 
@@ -54,37 +61,41 @@ enum class DocumentStatus {
     BANNED,
     REMOVED,
 };
+
 template<typename TypeStop>
 set<string> SetStopWords(const TypeStop& stopwords) {
     set<string> stop_words;
-    for (const string& word : stopwords) {
-        stop_words.insert(word);
-    }
-
+    stop_words.insert(stopwords.begin(), stopwords.end());
     return stop_words;
 }
-
 
 class SearchServer {
 public:
     template<typename TypeStop>
     explicit SearchServer(const TypeStop& stopwords)
             : stop_words_(SetStopWords(stopwords))   {
-        for (const string& word : SetStopWords(stopwords)) {
-            if (!IsValidWord(word)) {throw invalid_argument("Incorrect symbol in stop words"s);}
+       for (const string& word : stop_words_) {
+            if (!IsValidWord(word)) {
+                throw invalid_argument("Incorrect symbol in stop words"s);
+            }
         }
     }
 
     explicit SearchServer(const string& stopwords)
             : SearchServer(SplitIntoWords(stopwords))   {
-        if (!IsValidWord(stopwords)) {throw invalid_argument("Incorrect symbol in stop words"s);}
     }
 
     void AddDocument(int document_id, const string& document, DocumentStatus status,
                      const vector<int>& ratings) {
-        if (document_id < 0) { throw invalid_argument("Incorrect ID");}
-        if (documents_.count(document_id)) { throw invalid_argument("ID is already in server");}
-        if (!IsValidWord(document)) {throw invalid_argument("Incorrect symbol in document text");}
+        if (document_id < 0) {
+            throw invalid_argument("Incorrect ID");
+        }
+        if (documents_.count(document_id)) {
+            throw invalid_argument("ID is already in server");
+        }
+        if (!IsValidWord(document)) {
+            throw invalid_argument("Incorrect symbol in document text");
+        }
 
         const vector<string> words = SplitIntoWordsNoStop(document);
         const double inv_word_count = 1.0 / words.size();
@@ -101,9 +112,12 @@ public:
     vector<Document> FindTopDocuments(const string& raw_query, DocumentPredicate document_predicate) const {
         const Query query = ParseQuery(raw_query);
 
-        if (!IsValidWord(raw_query)) { throw invalid_argument("Incorrect symbol in query");}
-        if (query.minus_words.count(""s)) { throw invalid_argument("Incorrect minus word query (empty)");}
-        if (!IsDoubleMinus(query)) { throw invalid_argument("Incorrect minus word query (--)");}
+        if (query.minus_words.count(""s)) {
+            throw invalid_argument("Incorrect minus word query (empty)");
+        }
+        if (!IsDoubleMinus(query)) {
+            throw invalid_argument("Incorrect minus word query (--)");
+        }
 
         auto matched_documents = FindAllDocuments(query, document_predicate);
 
@@ -139,9 +153,12 @@ public:
         const Query query = ParseQuery(raw_query);
         vector<string> matched_words;
 
-        if (!IsValidWord(raw_query)) { throw invalid_argument("Incorrect symbol in query");}
-        if (query.minus_words.count(""s)) { throw invalid_argument("Incorrect minus word query (empty)");}
-        if (!IsDoubleMinus(query)) { throw invalid_argument("Incorrect minus word query (--)");}
+        if (query.minus_words.count(""s)) {
+            throw invalid_argument("Incorrect minus word query (empty)");
+        }
+        if (!IsDoubleMinus(query)) {
+            throw invalid_argument("Incorrect minus word query (--)");
+        }
 
         for (const string& word : query.plus_words) {
             if (word_to_document_freqs_.count(word) == 0) {
@@ -173,8 +190,7 @@ private:
         int rating;
         DocumentStatus status;
     };
-
-    inline static constexpr int INVALID_DOCUMENT_ID = -1;
+    
     vector<int> documents_ids_;
     set<string> stop_words_;
     map<string, map<int, double>> word_to_document_freqs_;
@@ -182,13 +198,6 @@ private:
 
     bool IsStopWord(const string& word) const {
         return stop_words_.count(word) > 0;
-    }
-
-    static bool IsValidWord(const string& word) {
-        // A valid word must not contain special characters
-        return none_of(word.begin(), word.end(), [](char c) {
-            return c >= '\0' && c < ' ';
-        });
     }
 
     vector<string> SplitIntoWordsNoStop(const string& text) const {
@@ -231,6 +240,9 @@ private:
     };
 
     Query ParseQuery(const string& text) const {
+        if (!IsValidWord(text)) {
+            throw invalid_argument("Incorrect symbol in query");
+        }
         Query query;
         for (const string& word : SplitIntoWords(text)) {
             const QueryWord query_word = ParseQueryWord(word);
