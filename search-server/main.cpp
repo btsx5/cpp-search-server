@@ -74,7 +74,7 @@ public:
     template<typename TypeStop>
     explicit SearchServer(const TypeStop& stopwords)
             : stop_words_(SetStopWords(stopwords))   {
-       for (const string& word : stop_words_) {
+        for (const string& word : stop_words_) {
             if (!IsValidWord(word)) {
                 throw invalid_argument("Incorrect symbol in stop words"s);
             }
@@ -93,12 +93,9 @@ public:
         if (documents_.count(document_id)) {
             throw invalid_argument("ID is already in server");
         }
-        if (!IsValidWord(document)) {
-            throw invalid_argument("Incorrect symbol in document text");
-        }
 
         const vector<string> words = SplitIntoWordsNoStop(document);
-        const double inv_word_count = 1.0 / words.size();
+        const double inv_word_count = 1.0 / static_cast<double>(words.size());
         documents_ids_.push_back(document_id);
 
         for (const string &word: words) {
@@ -111,14 +108,6 @@ public:
     template <typename DocumentPredicate>
     vector<Document> FindTopDocuments(const string& raw_query, DocumentPredicate document_predicate) const {
         const Query query = ParseQuery(raw_query);
-
-        if (query.minus_words.count(""s)) {
-            throw invalid_argument("Incorrect minus word query (empty)");
-        }
-        if (!IsDoubleMinus(query)) {
-            throw invalid_argument("Incorrect minus word query (--)");
-        }
-
         auto matched_documents = FindAllDocuments(query, document_predicate);
 
         sort(matched_documents.begin(), matched_documents.end(),
@@ -153,13 +142,6 @@ public:
         const Query query = ParseQuery(raw_query);
         vector<string> matched_words;
 
-        if (query.minus_words.count(""s)) {
-            throw invalid_argument("Incorrect minus word query (empty)");
-        }
-        if (!IsDoubleMinus(query)) {
-            throw invalid_argument("Incorrect minus word query (--)");
-        }
-
         for (const string& word : query.plus_words) {
             if (word_to_document_freqs_.count(word) == 0) {
                 continue;
@@ -190,7 +172,7 @@ private:
         int rating;
         DocumentStatus status;
     };
-    
+
     vector<int> documents_ids_;
     set<string> stop_words_;
     map<string, map<int, double>> word_to_document_freqs_;
@@ -201,6 +183,9 @@ private:
     }
 
     vector<string> SplitIntoWordsNoStop(const string& text) const {
+        if (!IsValidWord(text)) {
+            throw invalid_argument("Incorrect symbol in document text");
+        }
         vector<string> words;
         for (const string& word : SplitIntoWords(text)) {
             if (!IsStopWord(word)) {
@@ -228,6 +213,9 @@ private:
         bool is_minus = false;
         // Word shouldn't be empty
         if (text[0] == '-') {
+            if (text == "-"s) {
+                throw invalid_argument("Incorrect minus word query (empty)");
+            }
             is_minus = true;
             text = text.substr(1);
         }
@@ -239,12 +227,16 @@ private:
         set<string> minus_words;
     };
 
-    Query ParseQuery(const string& text) const {
-        if (!IsValidWord(text)) {
-            throw invalid_argument("Incorrect symbol in query");
+    static bool IsDoubleMinus(const Query& query) {
+        for (const string& minus_word : query.minus_words) {
+            if (minus_word[0] == '-') { return false;}
         }
+        return true;
+    }
+
+    Query ParseQuery(const string& text) const {
         Query query;
-        for (const string& word : SplitIntoWords(text)) {
+        for (const string& word : SplitIntoWordsNoStop(text)) {
             const QueryWord query_word = ParseQueryWord(word);
             if (!query_word.is_stop) {
                 if (query_word.is_minus) {
@@ -254,14 +246,10 @@ private:
                 }
             }
         }
-        return query;
-    }
-
-    static bool IsDoubleMinus(const Query& query) {
-        for (const string& minus_word : query.minus_words) {
-            if (minus_word[0] == '-') { return false;}
+        if (!IsDoubleMinus(query)) {
+            throw invalid_argument("Incorrect minus word query (--)");
         }
-        return true;
+        return query;
     }
 
     double ComputeWordInverseDocumentFreq(const string& word) const {
@@ -534,6 +522,19 @@ void TestAddDocumentsExeption() {
 
 }
 
+void FindTopDocumentsExeption() {
+    try {
+        SearchServer server("test_stop_words"s);
+        server.AddDocument(12, "cat int the forest"s, DocumentStatus::ACTUAL, {1, 2, 3});
+        server.FindTopDocuments("cat -");
+    }
+    catch (const invalid_argument &error) {
+        cerr << error.what() << endl;
+    }
+    catch (...) {
+        cout << "exeption?"s;
+    }
+}
 
 template <typename func_name>
 void RunTestImpl(func_name test, const string& func_n  ) {
@@ -559,5 +560,6 @@ void TestSearchServer() {
 
 int main() {
     TestSearchServer();
+    FindTopDocumentsExeption();
     TestAddDocumentsExeption();
 }
