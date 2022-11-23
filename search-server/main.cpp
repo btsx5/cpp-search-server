@@ -206,7 +206,6 @@ private:
     struct QueryWord {
         string data;
         bool is_minus;
-        bool is_stop;
     };
 
     QueryWord ParseQueryWord(string text) const {
@@ -216,10 +215,13 @@ private:
             if (text == "-"s) {
                 throw invalid_argument("Incorrect minus word query (empty)");
             }
+            if (text[1] == '-') {
+                throw invalid_argument("Incorrect minus word format (double '-')");
+            }
             is_minus = true;
             text = text.substr(1);
         }
-        return {text, is_minus, IsStopWord(text)};
+        return {text, is_minus};
     }
 
     struct Query {
@@ -227,28 +229,17 @@ private:
         set<string> minus_words;
     };
 
-    static bool IsDoubleMinus(const Query& query) {
-        for (const string& minus_word : query.minus_words) {
-            if (minus_word[0] == '-') { return false;}
-        }
-        return true;
-    }
-
     Query ParseQuery(const string& text) const {
         Query query;
         for (const string& word : SplitIntoWordsNoStop(text)) {
             const QueryWord query_word = ParseQueryWord(word);
-            if (!query_word.is_stop) {
-                if (query_word.is_minus) {
-                    query.minus_words.insert(query_word.data);
-                } else {
-                    query.plus_words.insert(query_word.data);
-                }
+            if (query_word.is_minus) {
+                query.minus_words.insert(query_word.data);
+            } else {
+                query.plus_words.insert(query_word.data);
             }
         }
-        if (!IsDoubleMinus(query)) {
-            throw invalid_argument("Incorrect minus word query (--)");
-        }
+
         return query;
     }
 
