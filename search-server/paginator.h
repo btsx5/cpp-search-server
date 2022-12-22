@@ -1,7 +1,7 @@
 #pragma once
 #include "read_input_functions.h"
-#include "string"
-#include "vector"
+#include <string>
+#include <vector>
 
 template<typename Iterator>
 class IteratorRange {
@@ -9,18 +9,18 @@ public:
     IteratorRange()=default;
 
     IteratorRange(const Iterator begin, const Iterator end, std::size_t size)
-            : Begin_(begin),
-              End_(end),
+            : begin_(begin),
+              end_(end),
               size_(size)
     {
     }
 
     Iterator begin() const {
-        return Begin_;
+        return begin_;
     }
 
     Iterator end() const {
-        return End_;
+        return end_;
     }
 
     size_t size() const {
@@ -28,8 +28,8 @@ public:
     }
 
 private:
-    Iterator Begin_;
-    Iterator End_;
+    Iterator begin_;
+    Iterator end_;
     size_t size_;
 
 };
@@ -37,19 +37,17 @@ private:
 template <typename Iterator>
 class Paginator {
 public:
-    Paginator(const Iterator& range_begin, const Iterator& range_end, std::size_t size)
-            :
-            size_(size)
+    Paginator(const Iterator range_begin, const Iterator range_end, std::size_t size)
     {
         FillUp(range_begin, range_end, size);
     }
 
-    void FillUp(const Iterator& range_begin, const Iterator& range_end, std::size_t size) {
+    void FillUp(const Iterator range_begin, const Iterator range_end, std::size_t size) {
         auto temp_range_begin=range_begin;
         while(temp_range_begin+size < range_end) {
-            IteratorRange ItR(temp_range_begin,temp_range_begin+size,size);
+            IteratorRange ItR(temp_range_begin, temp_range_begin+size, size);
             pages_.push_back(ItR);
-            temp_range_begin = temp_range_begin+size;
+            temp_range_begin += size;
         }
         IteratorRange ItR(temp_range_begin,range_end,size);
         pages_.push_back(ItR);
@@ -63,13 +61,10 @@ public:
     }
 
     std::size_t size() const {
-        return size_;
+        return pages_.size();
     }
 
 private:
-    Iterator Begin_;
-    Iterator End_;
-    std::size_t size_;
     std::vector<IteratorRange<Iterator>> pages_;
 };
 

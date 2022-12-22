@@ -5,8 +5,6 @@
 #include <algorithm>
 std::vector<std::string> SplitIntoWords(const std::string& text);
 
-bool IsValidWord(const std::string& word);
-
 template<typename TypeStop>
 std::set<std::string> SetStopWords(const TypeStop& stopwords) {
     std::set<std::string> stop_words;

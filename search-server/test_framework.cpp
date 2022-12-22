@@ -162,7 +162,7 @@ void TestAddDocumentsExeption() {
 
     try {
         SearchServer server("test_stop_words"s);
-        server.AddDocument(1, "cat int the forest \n"s, DocumentStatus::ACTUAL, {1, 2, 3});
+        server.AddDocument(1, "cat int the forest\n"s, DocumentStatus::ACTUAL, {1, 2, 3});
     }
     catch (const std::invalid_argument &error) {
         std::cerr << error.what() << std::endl;

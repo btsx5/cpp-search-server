@@ -13,7 +13,7 @@ private:
     struct QueryResult {
         bool empty_req;
         std::string request;
-        std::vector<Document> query_result;
+        int result_count;
     };
     std::deque<QueryResult> requests_;
     const static int min_in_day_ = 1440;
@@ -28,11 +28,11 @@ std::vector<Document> RequestQueue::AddFindRequest(const std::string& raw_query,
     std::vector<Document> result = server_.FindTopDocuments(raw_query, document_predicate);
     if (time<=min_in_day_) {
         if (result.empty()) {
-            requests_.push_back({true, raw_query, result});
+            requests_.push_back({true, raw_query, static_cast<int>(result.size())});
             ++empty_req_count_;
             return result;
         } else {
-            requests_.push_back({false, raw_query, result});
+            requests_.push_back({false, raw_query, static_cast<int>(result.size())});
             return result;
         }
 
@@ -43,7 +43,7 @@ std::vector<Document> RequestQueue::AddFindRequest(const std::string& raw_query,
                 ++empty_req_count_;
             }
             requests_.pop_front();
-            requests_.push_back({true, raw_query, result});
+            requests_.push_back({true, raw_query, static_cast<int>(result.size())});
             return result;
 
         } else {
@@ -51,7 +51,7 @@ std::vector<Document> RequestQueue::AddFindRequest(const std::string& raw_query,
                 --empty_req_count_;
             }
             requests_.pop_front();
-            requests_.push_back({false, raw_query, result});
+            requests_.push_back({false, raw_query, static_cast<int>(result.size())});
             return result;
         }
     }

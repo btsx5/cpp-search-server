@@ -11,10 +11,10 @@ SearchServer::SearchServer (const std::string& stopwords)
 void SearchServer::AddDocument(int document_id, const std::string& document, DocumentStatus status,
                  const std::vector<int>& ratings) {
     if (document_id < 0) {
-        throw std::invalid_argument("Incorrect ID");
+        throw std::invalid_argument("Incorrect ID " + std::to_string(document_id));
     }
     if (documents_.count(document_id)) {
-        throw std::invalid_argument("ID is already in server");
+        throw std::invalid_argument("ID is already in server " + std::to_string(document_id));
     }
 
     const std::vector<std::string> words = SplitIntoWordsNoStop(document);
@@ -74,12 +74,19 @@ bool SearchServer::IsStopWord(const std::string& word) const {
     return stop_words_.count(word) > 0;
 }
 
+bool SearchServer::IsValidWord(const std::string& word) {
+    // A valid word must not contain special characters
+    return none_of(word.begin(), word.end(), [](char c) {
+        return c >= '\0' && c < ' ';
+    });
+}
+
 std::vector<std::string> SearchServer::SplitIntoWordsNoStop(const std::string& text) const {
-    if (!IsValidWord(text)) {
-        throw std::invalid_argument("Incorrect symbol in document text");
-    }
     std::vector<std::string> words;
     for (const std::string& word : SplitIntoWords(text)) {
+        if (!IsValidWord(word)) {
+            throw std::invalid_argument( "Incorrect symbol in document text : " + word);
+        }
         if (!IsStopWord(word)) {
             words.push_back(word);
         }

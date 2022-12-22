@@ -1,6 +1,7 @@
 #pragma once
 #include "document.h"
 #include "string_processing.h"
+#include "log_duration.h"
 #include <set>
 #include <algorithm>
 #include <string>
@@ -47,6 +48,8 @@ private:
     std::map<int, DocumentData> documents_;
 
     bool IsStopWord(const std::string& word) const;
+
+    static bool IsValidWord(const std::string& word);
 
     std::vector<std::string> SplitIntoWordsNoStop(const std::string& text) const;
 
@@ -105,6 +108,7 @@ std::vector<Document> SearchServer::FindTopDocuments(const std::string& raw_quer
 
 template<typename Predicate>
 std::vector<Document> SearchServer::FindAllDocuments(const Query& query, Predicate predicate) const {
+    LOG_DURATION_STREAM("Long task", std::cout);
     std::map<int, double> document_to_relevance;
     for (const std::string& word : query.plus_words) {
         if (word_to_document_freqs_.count(word) == 0) {
