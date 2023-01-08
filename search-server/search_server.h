@@ -20,6 +20,10 @@ public:
 
     explicit SearchServer(const std::string& stopwords);
 
+    std::set<int>::const_iterator begin() const;
+
+    std::set<int>::const_iterator end() const;
+
     void AddDocument(int document_id, const std::string& document, DocumentStatus status,
                      const std::vector<int>& ratings);
 
@@ -28,13 +32,15 @@ public:
 
     std::vector<Document> FindTopDocuments(const std::string& raw_query, DocumentStatus status) const;
 
-    std::vector<Document>FindTopDocuments(const std::string& raw_query) const;
+    std::vector<Document> FindTopDocuments(const std::string& raw_query) const;
 
     size_t GetDocumentCount() const;
 
     std::tuple<std::vector<std::string>, DocumentStatus> MatchDocument(const std::string& raw_query, int document_id) const;
 
-    int GetDocumentId(int index) const;
+    const std::map<std::string, double>& GetWordFrequencies(int document_id) const;
+
+    void RemoveDocument(int document_id);
 
 private:
     struct DocumentData {
@@ -42,8 +48,10 @@ private:
         DocumentStatus status;
     };
 
-    std::vector<int> documents_ids_;
+    std::set<int> documents_ids_;
     std::set<std::string> stop_words_;
+    std::map<int, std::map<std::string, double>> words_freq_;
+    std::map<std::string, double> empty_;
     std::map<std::string, std::map<int, double>> word_to_document_freqs_;
     std::map<int, DocumentData> documents_;
 
@@ -77,7 +85,7 @@ private:
 };
 
 template<typename TypeStop>
- SearchServer::SearchServer(const TypeStop& stopwords)
+SearchServer::SearchServer(const TypeStop& stopwords)
         : stop_words_(SetStopWords(stopwords))   {
     for (const std::string& word : stop_words_) {
         if (!IsValidWord(word)) {
@@ -108,7 +116,6 @@ std::vector<Document> SearchServer::FindTopDocuments(const std::string& raw_quer
 
 template<typename Predicate>
 std::vector<Document> SearchServer::FindAllDocuments(const Query& query, Predicate predicate) const {
-    LOG_DURATION_STREAM("Long task", std::cout);
     std::map<int, double> document_to_relevance;
     for (const std::string& word : query.plus_words) {
         if (word_to_document_freqs_.count(word) == 0) {

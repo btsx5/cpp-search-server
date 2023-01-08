@@ -8,8 +8,16 @@ SearchServer::SearchServer (const std::string& stopwords)
         : SearchServer(SplitIntoWords(stopwords))   {
 }
 
+std::set<int>::const_iterator SearchServer::begin() const {
+    return documents_ids_.begin();
+}
+
+std::set<int>::const_iterator SearchServer::end() const {
+    return documents_ids_.end();
+}
+
 void SearchServer::AddDocument(int document_id, const std::string& document, DocumentStatus status,
-                 const std::vector<int>& ratings) {
+                               const std::vector<int>& ratings) {
     if (document_id < 0) {
         throw std::invalid_argument("Incorrect ID " + std::to_string(document_id));
     }
@@ -19,10 +27,11 @@ void SearchServer::AddDocument(int document_id, const std::string& document, Doc
 
     const std::vector<std::string> words = SplitIntoWordsNoStop(document);
     const double inv_word_count = 1.0 / static_cast<double>(words.size());
-    documents_ids_.push_back(document_id);
+    documents_ids_.insert(document_id);
 
     for (const std::string &word: words) {
         word_to_document_freqs_[word][document_id] += inv_word_count;
+        words_freq_[document_id][word] +=inv_word_count;
     }
 
     documents_.emplace(document_id, DocumentData{ComputeAverageRating(ratings), status});
@@ -66,8 +75,20 @@ std::tuple<std::vector<std::string>, DocumentStatus> SearchServer::MatchDocument
     return std::tuple {matched_words, documents_.at(document_id).status};
 }
 
-int SearchServer::GetDocumentId(int index) const {
-    return documents_ids_.at(index);
+const std::map<std::string, double>& SearchServer::GetWordFrequencies(int document_id) const {
+    if (!documents_ids_.count(document_id)) {
+        return empty_;
+    }
+    return words_freq_.at(document_id);
+}
+
+void SearchServer::RemoveDocument(int document_id) {
+    documents_ids_.erase(document_id);
+    documents_.erase(document_id);
+    for (auto [word, freq] : words_freq_.at(document_id)) {
+        word_to_document_freqs_.at(word).erase(document_id);
+    }
+    words_freq_.erase(document_id);
 }
 
 bool SearchServer::IsStopWord(const std::string& word) const {
