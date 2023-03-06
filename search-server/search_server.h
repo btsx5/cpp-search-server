@@ -98,7 +98,7 @@ private:
         std::vector<std::string_view> minus_words;
     };
 
-    Query ParseQuery(const std::string_view& text, bool policy = false) const;
+    Query ParseQuery(const std::string_view& text, bool policy_par = false) const;
 
     double ComputeWordInverseDocumentFreq(const std::string_view& word) const;
 
