@@ -133,12 +133,13 @@ const std::map<std::string_view, double>& SearchServer::GetWordFrequencies(int d
 }
 
 void SearchServer::RemoveDocument(int document_id) {
-    documents_ids_.erase(document_id);
-    documents_.erase(document_id);
+
     for (auto [word, freq] : words_freq_.at(document_id)) {
         word_to_document_freqs_.at(word).erase(document_id);
     }
     words_freq_.erase(document_id);
+    documents_ids_.erase(document_id);
+    documents_.erase(document_id);
 }
 
 bool SearchServer::IsStopWord(const std::string_view& word) const {

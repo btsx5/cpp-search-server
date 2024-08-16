@@ -6,7 +6,7 @@ std::vector<int> ids_to_remove;
 for (int id : search_server) {
     std::set<std::string> words;
     for (const auto& [word, ids] : search_server.GetWordFrequencies(id)) {
-    words.insert(word);
+    words.insert(std::string(word));
     }
     if (unique_documents.count(words)) {
         ids_to_remove.push_back(id);
